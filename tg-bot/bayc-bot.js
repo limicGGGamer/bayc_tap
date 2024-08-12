@@ -324,6 +324,27 @@ app.post('/submit-score', async (req, res) => {
     res.json({ status: 'success' });
 });
 
+app.post('/savescores', async (req, res) => {
+    console.log("savescores req: ",req);
+    console.log("savescores name: ",req.name);
+    console.log("savescores score: ",req.score);
+    
+    res.json({ status: 'success'});
+});
+
+app.get('/getscores', async (req, res) => {
+    console.log("getscores ");
+    
+    res.json({ status: 'success', score: 10});
+});
+
+app.post('/getrank', async (req, res) => {
+    console.log("getrank req: ",req);
+    console.log("getrank score: ",req.score);
+    
+    res.json({ status: 'success', rank: 1});
+});
+
 // Endpoint to get the highest score for a specific user
 app.get('/highest-score', async (req, res) => {
     const userId = req.query.userId;
