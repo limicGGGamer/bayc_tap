@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MyRoom = void 0;
 const core_1 = require("@colyseus/core");
 const MyRoomState_1 = require("./schema/MyRoomState");
-// const default_updJson = require("./json/upd_en.json");
+const default_updJson = require("./json/upd_en.json");
 const axios = require('axios'); // Import axios
 const api_base_url = "https://elfintongame.gggamer.org";
 const game_id = "bayc-tap";
@@ -17,19 +17,26 @@ class MyRoom extends core_1.Room {
     onCreate(options) {
         this.setState(new MyRoomState_1.MyRoomState());
         this.onMessage("*", (client, type, message) => {
-            console.log(type);
             switch (type) {
                 case "update-data":
-                    console.log("update-data");
+                    // console.log("update-data");
                     this.updateData(message);
                     break;
                 case "get-leaderboard":
-                    console.log("get-leaderboard");
+                    // console.log("get-leaderboard");
                     this.getLeaderboard();
                     break;
                 case "get-user-data":
-                    console.log("get-user-data");
+                    // console.log("get-user-data");
                     this.getUserData(message);
+                    break;
+                case "update-upgrade-data":
+                    // console.log("update-upgrade-data");
+                    this.updateUpgradeData(message);
+                    break;
+                case "get-upgrade-data":
+                    // console.log("get-upgrade-data");
+                    this.getUpgradeData(message);
                     break;
             }
         });
@@ -62,8 +69,7 @@ class MyRoom extends core_1.Room {
         this.disconnect();
     }
     updateData(message) {
-        const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin, upd } = message;
-        // console.log("updateData upd: ", JSON.stringify(upd));
+        const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin, isFollowChannel } = message;
         const extra = {
             "money": money,
             "totalMoney": totalMoney,
@@ -72,26 +78,15 @@ class MyRoom extends core_1.Room {
             "energy": energy,
             "curEnergy": curEnergy,
             "curSkin": curSkin,
-            // "upd": JSON.parse(upd)
+            "isFollowChannel": isFollowChannel
         };
         userData = {
             "userId": `${userId}`,
-            // "game_id": `${game_id}`, // You might need to dynamically set this
             "score": score,
             "username": `${username}`,
             "evmwallet": "evmwallet",
             "tonwallet": wallet_address,
             "extra": JSON.stringify(extra)
-            // extra: {
-            //   "money": money,
-            //   "totalMoney": totalMoney,
-            //   "earnClick": earnClick,
-            //   "earnSec": earnSec,
-            //   "energy": energy,
-            //   "curEnergy": curEnergy,
-            //   "curSkin": curSkin,
-            //   "upd": JSON.stringify(upd)
-            // }
         };
     }
     async getUserData(message) {
@@ -107,7 +102,6 @@ class MyRoom extends core_1.Room {
             console.log("get-user-data response: ", response.data);
             console.log("tonwallet: ", tonwallet);
             const data = response.data.data;
-            // const extra = JSON.stringify(data.extra);
             userData = {
                 "userId": `${data.userId}`,
                 "score": 0,
@@ -115,16 +109,6 @@ class MyRoom extends core_1.Room {
                 "evmwallet": "evmwallet",
                 "tonwallet": tonwallet,
                 "extra": data.extra
-                // extra: {
-                //   "money": Number(extra.money),
-                //   "totalMoney": Number(extra.totalMoney),
-                //   "earnClick": Number(extra.earnClick),
-                //   "earnSec":Number( extra.earnSec),
-                //   "energy": Number(extra.energy),
-                //   "curEnergy": Number(extra.curEnergy),
-                //   "curSkin": Number(extra.curSkin),
-                //   "upd": JSON.stringify(extra.upd)
-                // }
             };
             if (tonwallet == "")
                 userData.extra.money = 0;
@@ -153,7 +137,7 @@ class MyRoom extends core_1.Room {
                 "energy": 3000,
                 "curEnergy": 3000,
                 "curSkin": 0,
-                // "upd": JSON.stringify(default_updJson)
+                "isFollowChannel": 0
             };
             const response = await axios.post(url, {
                 "userId": `${userId}`,
@@ -171,10 +155,60 @@ class MyRoom extends core_1.Room {
             });
             userData = response.data.data;
             this.broadcast('game-event', { event: 'get-user-data', result: 1, data: userData });
+            const msg = {
+                "userId": `${userId}`,
+                "extra": ""
+            };
+            this.updateUpgradeData(msg);
             console.log("createNewUser success!!");
         }
         catch (error) {
             console.error("Error fetching createNewUser from external API: ", error.response ? error.response.data : "interal server error");
+        }
+    }
+    async updateUpgradeData(message) {
+        const { userId, extra } = message;
+        try {
+            const url = `${api_base_url}/task`;
+            let extraData = extra;
+            if (extra == "")
+                extraData = JSON.stringify(default_updJson);
+            const response = await axios.post(url, {
+                "userId": `${userId}`,
+                "game_id": `${game_id}`, // You might need to dynamically set this
+                "state": 1,
+                "taskname": "get-upgrade-data",
+                "extra": extraData
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': x_api_key // Replace with your actual API key
+                }
+            });
+            this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data });
+        }
+        catch (error) {
+            console.error("Error fetching updateUpgradeData from external API: ", error.response ? error.response.data : "interal server error");
+        }
+    }
+    async getUpgradeData(message) {
+        const { userId } = message;
+        try {
+            const url = `${api_base_url}/tasklist?userId=${userId}&game=${game_id}`;
+            const response = await axios.get(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': x_api_key // Replace with your actual API key
+                }
+            });
+            console.log("success getUpgradeData response.data: ", response.data);
+            if (!response.data.data.Items[0])
+                this.updateUpgradeData(userId);
+            else
+                this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data.Items[0] });
+        }
+        catch (error) {
+            console.error("Error fetching getUpgradeData from external API: ", error.response ? error.response.data : "interal server error");
         }
     }
     async getLeaderboard() {
@@ -195,10 +229,6 @@ class MyRoom extends core_1.Room {
                     gameTimes: item.game_times,
                     username: item.username
                 }));
-                // let leaderboardMessage = '🏆 Leaderboard 🏆\n\n';
-                // leaderboardData.forEach((entry:any, index:any) => {
-                //     leaderboardMessage += `${index + 1}. User: ${entry.username}, Score: ${entry.score}\n`;
-                // });
                 this.broadcast('game-event', { event: 'get-leaderboard', result: 1, data: leaderboardData });
             }
             else {

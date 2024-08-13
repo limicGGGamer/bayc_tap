@@ -19,22 +19,25 @@ export class MyRoom extends Room<MyRoomState> {
 
     this.onMessage("*", (client, type, message) => {
       
-      console.log(type);
       switch (type) {
         case "update-data":
-          console.log("update-data");
+          // console.log("update-data");
           this.updateData(message);
           break;
         case "get-leaderboard":
-          console.log("get-leaderboard");
+          // console.log("get-leaderboard");
           this.getLeaderboard();
           break;
         case "get-user-data":
-          console.log("get-user-data");
+          // console.log("get-user-data");
           this.getUserData(message);
           break;
+        case "update-upgrade-data":
+          // console.log("update-upgrade-data");
+          this.updateUpgradeData(message);
+        break;
         case "get-upgrade-data":
-          console.log("get-upgrade-data");
+          // console.log("get-upgrade-data");
           this.getUpgradeData(message);
         break;
       }
@@ -78,7 +81,7 @@ export class MyRoom extends Room<MyRoomState> {
   }
 
   updateData(message: any) {
-    const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin} = message;
+    const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin, isFollowChannel} = message;
     
     const extra = {
       "money": money,
@@ -88,11 +91,11 @@ export class MyRoom extends Room<MyRoomState> {
       "energy": energy,
       "curEnergy": curEnergy,
       "curSkin": curSkin,
+      "isFollowChannel": isFollowChannel
     }
 
     userData = {
       "userId": `${userId}`,
-      // "game_id": `${game_id}`, // You might need to dynamically set this
       "score": score,
       "username": `${username}`,
       "evmwallet": "evmwallet",
@@ -115,7 +118,6 @@ export class MyRoom extends Room<MyRoomState> {
       console.log("get-user-data response: ", response.data);
       console.log("tonwallet: ", tonwallet);
       const data = response.data.data;
-      // const extra = JSON.stringify(data.extra);
   
       userData = {
         "userId": `${data.userId}`,
@@ -124,16 +126,6 @@ export class MyRoom extends Room<MyRoomState> {
         "evmwallet": "evmwallet",
         "tonwallet": tonwallet,
         "extra": data.extra
-        // extra: {
-        //   "money": Number(extra.money),
-        //   "totalMoney": Number(extra.totalMoney),
-        //   "earnClick": Number(extra.earnClick),
-        //   "earnSec":Number( extra.earnSec),
-        //   "energy": Number(extra.energy),
-        //   "curEnergy": Number(extra.curEnergy),
-        //   "curSkin": Number(extra.curSkin),
-        //   "upd": JSON.stringify(extra.upd)
-        // }
       };
   
       if(tonwallet == "")
@@ -167,7 +159,7 @@ export class MyRoom extends Room<MyRoomState> {
         "energy": 3000,
         "curEnergy": 3000,
         "curSkin": 0,
-        // "upd": JSON.stringify(default_updJson)
+        "isFollowChannel": 0
       }
       
       const response = await axios.post(url, {
@@ -193,7 +185,7 @@ export class MyRoom extends Room<MyRoomState> {
         "extra": ""
       }
 
-      this.getUpgradeData(msg);
+      this.updateUpgradeData(msg);
 
       console.log("createNewUser success!!");
     } catch (error: any) {
@@ -201,7 +193,7 @@ export class MyRoom extends Room<MyRoomState> {
     }
   }
 
-  async getUpgradeData(message: any){
+  async updateUpgradeData(message: any){
     const {userId, extra} = message;
 
     try{
@@ -225,6 +217,30 @@ export class MyRoom extends Room<MyRoomState> {
 
 
       this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data });
+    }catch (error: any) {
+      console.error("Error fetching updateUpgradeData from external API: ", error.response ? error.response.data:"interal server error");
+    }
+  }
+
+  async getUpgradeData(message: any){
+    const {userId} = message;
+
+    try{
+      const url = `${api_base_url}/tasklist?userId=${userId}&game=${game_id}`;
+
+      const response = await axios.get(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': x_api_key // Replace with your actual API key
+        }
+      });
+
+      console.log("success getUpgradeData response.data: ",response.data);
+
+      if(!response.data.data.Items[0])
+        this.updateUpgradeData(userId);
+      else
+        this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data.Items[0] });
     }catch (error: any) {
       console.error("Error fetching getUpgradeData from external API: ", error.response ? error.response.data:"interal server error");
     }
