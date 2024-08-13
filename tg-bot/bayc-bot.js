@@ -9,7 +9,7 @@ const axios = require('axios'); // Import axios
 const token = '7254848094:AAHSL_8ZqxS0sRy8vPGZTUWIv7ZnAfPQDX4'; // Replace with your bot's token
 const WEB_APP_URL = "https://staging.d2kuhkq35dk7lt.amplifyapp.com";
 // const WEB_APP_URL = "https://elfintontest.gggamer.org";
-const game_photo_url = 'http://ec2-54-254-221-210.ap-southeast-1.compute.amazonaws.com/public/bayc_tap/bayc_photo.png'; // Ensure this is correct
+const game_photo_url = 'http://ec2-54-254-221-210.ap-southeast-1.compute.amazonaws.com/public/bayc_tap/bayc_photo_v2.png'; // Ensure this is correct
 
 const api_base_url = "https://elfintongame.gggamer.org";
 const x_api_key = "UTmNNhkgSE54G3LToyYs9aN9R7lLk931muMge9dg";
@@ -375,7 +375,7 @@ app.get('/highest-score', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3100;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

@@ -1,7 +1,7 @@
 import { Room, Client } from "@colyseus/core";
 import { MyRoomState } from "./schema/MyRoomState";
 import { json } from "express";
-const default_updJson = require("../json/upd_en.json");
+// const default_updJson = require("./json/upd_en.json");
 const axios = require('axios'); // Import axios
 
 const api_base_url = "https://elfintongame.gggamer.org";
@@ -56,7 +56,7 @@ export class MyRoom extends Room<MyRoomState> {
         "username": `${userData.username}`,
         "evmwallet": "evmwallet",
         "tonwallet": userData.tonwallet,
-        "extra": JSON.stringify(userData.extra)
+        "extra": userData.extra
       }, {
         headers: {
           'Content-Type': 'application/json',
@@ -73,9 +73,21 @@ export class MyRoom extends Room<MyRoomState> {
 
   }
 
-  async updateData(message: any) {
-    console.log("updateData message: ", message);
-    const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin } = message;
+  updateData(message: any) {
+    const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin, upd } = message;
+
+    // console.log("updateData upd: ", JSON.stringify(upd));
+    
+    const extra = {
+      "money": money,
+      "totalMoney": totalMoney,
+      "earnClick": earnClick,
+      "earnSec": earnSec,
+      "energy": energy,
+      "curEnergy": curEnergy,
+      "curSkin": curSkin,
+      // "upd": JSON.parse(upd)
+    }
 
     userData = {
       "userId": `${userId}`,
@@ -84,15 +96,17 @@ export class MyRoom extends Room<MyRoomState> {
       "username": `${username}`,
       "evmwallet": "evmwallet",
       "tonwallet": wallet_address,
-      extra: {
-        "money": money,
-        "totalMoney": totalMoney,
-        "earnClick": earnClick,
-        "earnSec": earnSec,
-        "energy": energy,
-        "curEnergy": curEnergy,
-        "curSkin": curSkin
-      }
+      "extra": JSON.stringify(extra)
+      // extra: {
+      //   "money": money,
+      //   "totalMoney": totalMoney,
+      //   "earnClick": earnClick,
+      //   "earnSec": earnSec,
+      //   "energy": energy,
+      //   "curEnergy": curEnergy,
+      //   "curSkin": curSkin,
+      //   "upd": JSON.stringify(upd)
+      // }
     };
   }
 
@@ -110,7 +124,7 @@ export class MyRoom extends Room<MyRoomState> {
       console.log("get-user-data response: ", response.data);
       console.log("tonwallet: ", tonwallet);
       const data = response.data.data;
-      const extra = JSON.parse(data.extra);
+      // const extra = JSON.stringify(data.extra);
   
       userData = {
         "userId": `${data.userId}`,
@@ -118,16 +132,17 @@ export class MyRoom extends Room<MyRoomState> {
         "username": `${data.username}`,
         "evmwallet": "evmwallet",
         "tonwallet": tonwallet,
-        extra: {
-          "money": Number(extra.money),
-          "totalMoney": Number(extra.totalMoney),
-          "earnClick": Number(extra.earnClick),
-          "earnSec":Number( extra.earnSec),
-          "energy": Number(extra.energy),
-          "curEnergy": Number(extra.curEnergy),
-          "curSkin": Number(extra.curSkin),
-          "upd": extra.upd
-        }
+        "extra": data.extra
+        // extra: {
+        //   "money": Number(extra.money),
+        //   "totalMoney": Number(extra.totalMoney),
+        //   "earnClick": Number(extra.earnClick),
+        //   "earnSec":Number( extra.earnSec),
+        //   "energy": Number(extra.energy),
+        //   "curEnergy": Number(extra.curEnergy),
+        //   "curSkin": Number(extra.curSkin),
+        //   "upd": JSON.stringify(extra.upd)
+        // }
       };
   
       if(tonwallet == "")
@@ -159,9 +174,9 @@ export class MyRoom extends Room<MyRoomState> {
         "earnClick": 1,
         "earnSec": 0,
         "energy": 3000,
-        "curEnergy": 0,
+        "curEnergy": 3000,
         "curSkin": 0,
-        "upd": default_updJson
+        // "upd": JSON.stringify(default_updJson)
       }
       
       const response = await axios.post(url, {
@@ -171,7 +186,7 @@ export class MyRoom extends Room<MyRoomState> {
         "username": "new user",
         "evmwallet": "evmwallet",
         "tonwallet": `${walletId}`,
-        "extra": JSON.stringify(extra)
+        "extra": extra
       }, {
         headers: {
           'Content-Type': 'application/json',
