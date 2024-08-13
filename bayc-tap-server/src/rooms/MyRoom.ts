@@ -1,7 +1,7 @@
 import { Room, Client } from "@colyseus/core";
 import { MyRoomState } from "./schema/MyRoomState";
 import { json } from "express";
-// const default_updJson = require("./json/upd_en.json");
+const default_updJson = require("./json/upd_en.json");
 const axios = require('axios'); // Import axios
 
 const api_base_url = "https://elfintongame.gggamer.org";
@@ -33,6 +33,10 @@ export class MyRoom extends Room<MyRoomState> {
           console.log("get-user-data");
           this.getUserData(message);
           break;
+        case "get-upgrade-data":
+          console.log("get-upgrade-data");
+          this.getUpgradeData(message);
+        break;
       }
     });
 
@@ -74,9 +78,7 @@ export class MyRoom extends Room<MyRoomState> {
   }
 
   updateData(message: any) {
-    const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin, upd } = message;
-
-    // console.log("updateData upd: ", JSON.stringify(upd));
+    const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin} = message;
     
     const extra = {
       "money": money,
@@ -86,7 +88,6 @@ export class MyRoom extends Room<MyRoomState> {
       "energy": energy,
       "curEnergy": curEnergy,
       "curSkin": curSkin,
-      // "upd": JSON.parse(upd)
     }
 
     userData = {
@@ -97,16 +98,6 @@ export class MyRoom extends Room<MyRoomState> {
       "evmwallet": "evmwallet",
       "tonwallet": wallet_address,
       "extra": JSON.stringify(extra)
-      // extra: {
-      //   "money": money,
-      //   "totalMoney": totalMoney,
-      //   "earnClick": earnClick,
-      //   "earnSec": earnSec,
-      //   "energy": energy,
-      //   "curEnergy": curEnergy,
-      //   "curSkin": curSkin,
-      //   "upd": JSON.stringify(upd)
-      // }
     };
   }
 
@@ -197,9 +188,45 @@ export class MyRoom extends Room<MyRoomState> {
       userData = response.data.data;
       this.broadcast('game-event', { event: 'get-user-data', result: 1, data: userData });
 
+      const msg = {
+        "userId": `${userId}`,
+        "extra": ""
+      }
+
+      this.getUpgradeData(msg);
+
       console.log("createNewUser success!!");
     } catch (error: any) {
       console.error("Error fetching createNewUser from external API: ", error.response ? error.response.data:"interal server error");
+    }
+  }
+
+  async getUpgradeData(message: any){
+    const {userId, extra} = message;
+
+    try{
+      const url = `${api_base_url}/task`;
+      let extraData = extra;
+      if(extra == "")
+        extraData = JSON.stringify(default_updJson);
+
+      const response = await axios.post(url, {
+        "userId": `${userId}`,
+        "game_id": `${game_id}`, // You might need to dynamically set this
+        "state": 1,
+        "taskname": "get-upgrade-data",
+        "extra": extraData
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': x_api_key // Replace with your actual API key
+        }
+      });
+
+
+      this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data });
+    }catch (error: any) {
+      console.error("Error fetching getUpgradeData from external API: ", error.response ? error.response.data:"interal server error");
     }
   }
 
@@ -223,11 +250,6 @@ export class MyRoom extends Room<MyRoomState> {
               gameTimes: item.game_times,
               username: item.username
           }));
-
-          // let leaderboardMessage = '🏆 Leaderboard 🏆\n\n';
-          // leaderboardData.forEach((entry:any, index:any) => {
-          //     leaderboardMessage += `${index + 1}. User: ${entry.username}, Score: ${entry.score}\n`;
-          // });
 
           this.broadcast('game-event', { event: 'get-leaderboard', result: 1, data: leaderboardData });
           
