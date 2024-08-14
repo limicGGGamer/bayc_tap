@@ -19,7 +19,7 @@ class MyRoom extends core_1.Room {
         this.onMessage("*", (client, type, message) => {
             switch (type) {
                 case "update-data":
-                    console.log("update-data message: ", message);
+                    // console.log("update-data message: ",message);
                     this.updateData(message);
                     break;
                 case "get-leaderboard":
@@ -42,11 +42,15 @@ class MyRoom extends core_1.Room {
         });
     }
     async submitScore() {
+        if (userData.tonwallet == '') {
+            this.disconnect();
+            return;
+        }
         try {
             const url = `${api_base_url}/upsertUser`;
             if (userData.score <= 0)
                 userData.score = 1;
-            console.log("upsertUser userData: ", userData);
+            // console.log("upsertUser userData: ", userData);
             const response = await axios.post(url, {
                 "userId": `${userData.userId}`,
                 "game_id": `${game_id}`, // You might need to dynamically set this
@@ -69,7 +73,7 @@ class MyRoom extends core_1.Room {
         this.disconnect();
     }
     updateData(message) {
-        const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin, isFollowChannel } = message;
+        const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin, isFollowChannel, lastUpdateTime, lastPlayDate } = message;
         const extra = {
             "money": money,
             "totalMoney": totalMoney,
@@ -78,7 +82,9 @@ class MyRoom extends core_1.Room {
             "energy": energy,
             "curEnergy": curEnergy,
             "curSkin": curSkin,
-            "isFollowChannel": isFollowChannel
+            "isFollowChannel": isFollowChannel,
+            "lastUpdateTime": lastUpdateTime,
+            "lastPlayDate": lastPlayDate
         };
         userData = {
             "userId": `${userId}`,
@@ -91,17 +97,26 @@ class MyRoom extends core_1.Room {
     }
     async getUserData(message) {
         const url = `${api_base_url}/me?userId=${message.userId}&game=${game_id}`;
-        console.log("getUserData message: ", message);
+        // console.log("getUserData message: ", message);
         const tonwallet = message.walletId;
+        const curDate = message.curDate;
+        // console.log("get-user-data curDate: ", curDate);
         try {
             const response = await axios.get(url, {
                 headers: {
                     'x-api-key': x_api_key
                 }
             });
-            console.log("get-user-data response: ", response.data);
-            console.log("tonwallet: ", tonwallet);
-            const data = response.data.data;
+            // console.log("get-user-data response: ", response.data);
+            let data = response.data.data;
+            let extra = JSON.parse(data.extra);
+            if (extra.lastPlayDate != curDate) {
+                extra.energy = 3000;
+                extra.curEnergy = 3000;
+                extra.lastPlayDate = curDate;
+                data.extra = JSON.stringify(extra);
+                // console.log("get-user-data data.extra: ", data.extra);
+            }
             userData = {
                 "userId": `${data.userId}`,
                 "score": 0,
@@ -110,15 +125,15 @@ class MyRoom extends core_1.Room {
                 "tonwallet": tonwallet,
                 "extra": data.extra
             };
-            if (tonwallet == "")
-                userData.extra.money = 0;
+            console.log("success get-user-data : ", userData);
             this.broadcast('game-event', { event: 'get-user-data', result: 1, data: userData });
         }
         catch (error) {
-            console.error("Error fetching get-user-data from external API: ", error.response ? error.response.data : "interal server error");
+            const msg = error.response ? error.response.data : "interal server error";
+            console.error("Error fetching get-user-data from external API: ", msg);
             this.broadcast('game-event', {
                 event: 'get-user-data',
-                data: error.response.data
+                data: msg
             });
             if (error.response.data.message == "User not found" && tonwallet != "")
                 this.createNewUser(message);
@@ -129,6 +144,11 @@ class MyRoom extends core_1.Room {
         const walletId = message.walletId;
         try {
             const url = `${api_base_url}/upsertUser`;
+            const curData = new Date().toLocaleString('en', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            });
             const extra = {
                 "money": 0,
                 "totalMoney": 0,
@@ -137,7 +157,9 @@ class MyRoom extends core_1.Room {
                 "energy": 3000,
                 "curEnergy": 3000,
                 "curSkin": 0,
-                "isFollowChannel": 0
+                "isFollowChannel": 0,
+                "lastUpdateTime": Date.now(),
+                "lastPlayDate": curData
             };
             const response = await axios.post(url, {
                 "userId": `${userId}`,
