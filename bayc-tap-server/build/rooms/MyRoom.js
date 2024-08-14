@@ -19,7 +19,7 @@ class MyRoom extends core_1.Room {
         this.onMessage("*", (client, type, message) => {
             switch (type) {
                 case "update-data":
-                    // console.log("update-data");
+                    console.log("update-data message: ", message);
                     this.updateData(message);
                     break;
                 case "get-leaderboard":
@@ -185,7 +185,8 @@ class MyRoom extends core_1.Room {
                     'x-api-key': x_api_key // Replace with your actual API key
                 }
             });
-            this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data });
+            console.log("success updateUpgradeData response.data.data: ", response.data.data);
+            // this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data });
         }
         catch (error) {
             console.error("Error fetching updateUpgradeData from external API: ", error.response ? error.response.data : "interal server error");
@@ -202,8 +203,14 @@ class MyRoom extends core_1.Room {
                 }
             });
             console.log("success getUpgradeData response.data: ", response.data);
-            if (!response.data.data.Items[0])
-                this.updateUpgradeData(userId);
+            // console.log("getUpgradeData response.data.data.Items.length: ",response.data.data.Items.length);
+            if (response.data.data.Items.length == 0) {
+                const msg = {
+                    "userId": userId,
+                    "extra": ""
+                };
+                this.updateUpgradeData(msg);
+            }
             else
                 this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data.Items[0] });
         }

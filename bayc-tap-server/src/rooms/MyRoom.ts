@@ -21,7 +21,7 @@ export class MyRoom extends Room<MyRoomState> {
       
       switch (type) {
         case "update-data":
-          // console.log("update-data");
+          console.log("update-data message: ",message);
           this.updateData(message);
           break;
         case "get-leaderboard":
@@ -215,8 +215,10 @@ export class MyRoom extends Room<MyRoomState> {
         }
       });
 
+      console.log("success updateUpgradeData response.data.data: ",response.data.data);
 
-      this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data });
+
+      // this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data });
     }catch (error: any) {
       console.error("Error fetching updateUpgradeData from external API: ", error.response ? error.response.data:"interal server error");
     }
@@ -237,9 +239,14 @@ export class MyRoom extends Room<MyRoomState> {
 
       console.log("success getUpgradeData response.data: ",response.data);
 
-      if(!response.data.data.Items[0])
-        this.updateUpgradeData(userId);
-      else
+      // console.log("getUpgradeData response.data.data.Items.length: ",response.data.data.Items.length);
+      if(response.data.data.Items.length == 0){
+        const msg = {
+          "userId": userId,
+          "extra": ""
+        }
+        this.updateUpgradeData(msg);
+      }else
         this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data.Items[0] });
     }catch (error: any) {
       console.error("Error fetching getUpgradeData from external API: ", error.response ? error.response.data:"interal server error");
