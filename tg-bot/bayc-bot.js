@@ -4,51 +4,40 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const cors = require('cors'); // Added CORS support
-// const axios = require('axios'); // Import axios
+// const https = require('https');
 
 const token = '7254848094:AAHSL_8ZqxS0sRy8vPGZTUWIv7ZnAfPQDX4'; // Replace with your bot's token
-const WEB_APP_URL = "https://staging.d2kuhkq35dk7lt.amplifyapp.com";
-// const WEB_APP_URL = "https://elfintontest.gggamer.org";
+// const providerToken = ' 284685063:TEST:MzI3OTQxZjRlZGNj';
+
+// const WEB_APP_URL = "https://staging.d2kuhkq35dk7lt.amplifyapp.com";
+const WEB_APP_URL = "https://dev.d2kuhkq35dk7lt.amplifyapp.com/";
 const game_photo_url = 'http://ec2-18-143-141-68.ap-southeast-1.compute.amazonaws.com/bayc_photo_v2.png'; // Ensure this is correct
 
-// const api_base_url = "https://elfintongame.gggamer.org";
-// const x_api_key = "UTmNNhkgSE54G3LToyYs9aN9R7lLk931muMge9dg";
-// const game_id = "000000"
-
-const bot = new TelegramBot(token, {
-    polling: {
-      interval: 1000,
-      autoStart: true,
-      params: {
-        timeout: 10
-      }
-    }
-  });
+const bot = new TelegramBot(token, { polling: true });
 
 const app = express();
 app.use(cors()); // Enable CORS
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
-// const short_name = 'tggametest';
 
-// let groupChatId = null;
-// // let groupChatId = "-4236530154"; // Variable to store the group chat ID
-// let leaderboard = []; // Array to store the leaderboard
-
-
+// // Sample product information
+// const productTitle = 'Awesome Product';
+// const productDescription = 'Awesome Product'.substring(0, 32);;
+// const productPrice = 1000; // 10.00 USD in cents (Telegram expects prices in the smallest currency unit)
+// const currency = 'USD';
 
 // Bot command to start the game with an inline keyboard button in a private chat
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    
+    console.log("start bot chatId: ", chatId)
+
     if (msg.chat.type === 'private') {
         const options = {
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: 'Play Game', web_app: { url: WEB_APP_URL }}],
+                    [{ text: 'Play Game', web_app: { url: WEB_APP_URL } }],
                     [{ text: 'Twitter', url: 'https://x.com/BoredApeYC' }, { text: 'OpenSea', url: 'https://opensea.io/collection/boredapeyachtclub' }, { text: 'Links', url: 'https://yuga.com/links/bayc' }],
-                    // [{ text: '官方中文群', url: 'https://t.me/ElfinKDMCN' }, { text: 'English Group', url: 'https://t.me/ElfinKDM' }],
-                    // [{ text: 'Leaderboard', callback_data: 'leaderboard' }]
+                    // [{ text: 'Buy Product', switch_inline_query: 'buy' }]
                 ]
             }
         };
@@ -61,296 +50,211 @@ bot.onText(/\/start/, (msg) => {
     }
 });
 
-
-// app.get('/get-tasks', async (req, res) => {
-//     const userId = req.query.userId;
-//     // console.log("userId: ", userId);
-
-//     if (!userId) {
-//         return res.status(400).json({ status: 'error', message: 'User ID is required' });
-//     }
-
-//     // Fetch the highest score from the external API
-//     try {
-//         const url = `${api_base_url}/tasklist?userId=${userId}&game=${game_id}`;
-
-//         const response = await axios.get(url, {
-//             headers: {
-//                 'x-api-key': x_api_key
-//             }
-//         });
-
-//         let tasks = response.data.data.Items || [];
-        
-//         tasks = tasks.map(item=>({
-//             task: item.taskname
-//         }));
-//         // console.log(tasks);
-
-//         res.json({ status: 'success', tasks: tasks });
-
-//     } catch (error) {
-//         console.error("Error fetching tasks from external API: ", error.response ? error.response.data : error.message);
-//         res.status(500).json({ status: 'error', message: 'Failed to fetch tasks from external API' });
-//     }
-// });
-
-// app.post('/update-tasks', async(req, res)=>{
-//     const { userId, taskname, state } = req.body;
-
-//     // console.log("Received data: ", req.body);
-
-//     // Redirect to another API with the provided headers and body
-//     try {
-//         const url = `${api_base_url}/task`;
-
-//         const response = await axios.post(url, {
-//             "userId": `${userId}`,
-//             "taskname": `${taskname}`,
-//             "state": `${state}`,
-//             "game_id": `${game_id}`
-//         }, {
-//             headers: {
-//                 'Content-Type': 'application/json',
-//                 'x-api-key': x_api_key // Replace with your actual API key
-//             }
-//         });
-
-//         // console.log("Successfully posted to external API: ", response.data);
-//     } catch (error) {
-//         console.error("Error posting to external API: ", error.response ? error.response.data : error.message);
-//     }
-
-//     res.json({ status: 'success' });
-// });
-
-// // Endpoint to get the leaderboard
-// app.get('/leaderboard', async (req, res) => {
-//     try {
-//         const url = `${api_base_url}/leaderboard`;
-//         const response = await axios.post(url, {
-//             "game_id": `${game_id}`
-//         }, {
-//             headers: {
-//                 'Content-Type': 'application/json',
-//                 'x-api-key': x_api_key
-//             }
-//         });
-
-//         if (response.data.result === 1 && response.data.data.Items) {
-//             const leaderboardData = response.data.data.Items.map(item => ({
-//                 score: item.score,
-//                 userId: item.user_id,
-//                 gameTimes: item.game_times,
-//                 username: item.username
-//             }));
-
-//             // console.log("Leaderboard data: ", leaderboardData);
-
-//             res.json({ status: 'success', leaderboard: leaderboardData });
-//         } else {
-//             // console.log("No data found in leaderboard");
-//             res.json({ status: 'success', leaderboard: [] });
+// // Handler for inline query
+// bot.on('inline_query', (query) => {
+//     console.log("Received inline query:", query);
+//     const inlineQueryId = query.id;
+    
+//     const inlineQueryResult = {
+//         type: 'article',
+//         id: 'invoice1',
+//         title: 'Buy ' + productTitle,
+//         description: 'Click to get an invoice for ' + productTitle,
+//         input_message_content: {
+//             message_text: `Would you like to buy ${productTitle} for ${productPrice/100} ${currency}?`,
+//             parse_mode: 'Markdown'
+//         },
+//         reply_markup: {
+//             inline_keyboard: [[
+//                 { text: 'Buy Now', callback_data: 'buy_product' }
+//             ]]
 //         }
-//     } catch (error) {
-//         console.error("Error fetching leaderboard data: ", error.response ? error.response.data : error.message);
-//         res.status(500).json({ status: 'error', message: 'Failed to fetch leaderboard data' });
-//     }
+//     };
+
+//     bot.answerInlineQuery(inlineQueryId, [inlineQueryResult], {
+//         cache_time: 0
+//     }).then(() => {
+//         console.log('Successfully answered inline query');
+//     }).catch(error => {
+//         console.error('Error answering inline query:', error);
+//     });
 // });
 
-// // Function to fetch and send the leaderboard
-// async function fetchAndSendLeaderboard(chatId) {
-//     try {
-//         let url = `${api_base_url}/leaderboard`;
-//         let response = await axios.post(url, {
-//             "game_id": `${game_id}`
-//         }, {
-//             headers: {
-//                 'Content-Type': 'application/json',
-//                 'x-api-key': x_api_key
-//             }
-//         });
-
-//         if (response.data.result === 1 && response.data.data.Items) {
-//             const leaderboardData = response.data.data.Items.map(item => ({
-//                 score: item.score,
-//                 userId: item.user_id,
-//                 gameTimes: item.game_times,
-//                 username: item.username
-//             }));
-
-//             let leaderboardMessage = '🏆 Leaderboard 🏆\n\n';
-//             leaderboardData.forEach((entry, index) => {
-//                 leaderboardMessage += `${index + 1}. User: ${entry.username}, Score: ${entry.score}\n`;
-//             });
-
-//             // console.log("Leaderboard data: ", leaderboardData);
-//             // bot.sendMessage(chatId, leaderboardMessage);
-
-
-//             url = `${api_base_url}/me?userId=${chatId}&game=${game_id}`;
-
-//             response = await axios.get(url, {
-//                 headers: {
-//                     'x-api-key': x_api_key
-//                 }
-//             });
-    
-//             const data = response.data.data;
-    
-//             leaderboardMessage += `\n\n`;
-//             leaderboardMessage += `User: ${data.username}\nRank: ${data.rank}\nScore: ${data.score}\n`;
-    
-//             // console.log("Leaderboard data: ", leaderboardData);
-//             bot.sendMessage(chatId, leaderboardMessage);
-
-
-//         } else {
-//             // console.log("No data found in leaderboard");
-//             bot.sendMessage(chatId, "No data found in leaderboard.");
-//         }
-//     } catch (error) {
-//         console.error("Error fetching leaderboard data: ", error.response ? error.response.data : error.message);
-//         bot.sendMessage(chatId, "Failed to fetch leaderboard data.");
-//     }
-
-// }
-
-// // Callback query handler for the leaderboard button
+// // Handle callback queries
 // bot.on('callback_query', async (callbackQuery) => {
-//     const msg = callbackQuery.message;
-//     const chatId = msg.chat.id;
+//     console.log("Received callback query:", JSON.stringify(callbackQuery, null, 2));
+//     const chatId = callbackQuery.from.id;
 
-//     if (callbackQuery.data === 'leaderboard') {
-//         await fetchAndSendLeaderboard(chatId);
-//     }
-// });
-
-// // Endpoint to get the leaderboard
-// bot.onText(/\/leaderboard/, async (msg) => {
-//     const chatId = msg.chat.id;
-
-//     if (msg.chat.type === 'private'){
-//         await fetchAndSendLeaderboard(chatId);
-//     }else{
+//     if (callbackQuery.data === 'buy_product') {
 //         try {
-//             let url = `${api_base_url}/leaderboard`;
-//             let response = await axios.post(url, {
-//                 "game_id": `${game_id}`
-//             }, {
+//             const prices = JSON.stringify([{ 
+//                 label: productTitle, 
+//                 amount: productPrice 
+//             }]);
+
+//             console.log('Attempting to send invoice with the following details:');
+//             console.log('Chat ID:', chatId);
+//             console.log('Product Title:', productTitle);
+//             console.log('Product Description:', productDescription);
+//             console.log('Provider Token:', providerToken.trim());
+//             console.log('Currency:', currency);
+//             console.log('Prices:', prices);
+
+//             const postData = new URLSearchParams({
+//                 chat_id: chatId,
+//                 title: productTitle,
+//                 description: productDescription,
+//                 payload: callbackQuery.id,
+//                 provider_token: providerToken.trim(),
+//                 start_parameter: 'start_param',
+//                 currency: currency,
+//                 prices: prices
+//             }).toString();
+
+//             const options = {
+//                 hostname: 'api.telegram.org',
+//                 port: 443,
+//                 path: `/bot${token}/sendInvoice`,
+//                 method: 'POST',
 //                 headers: {
-//                     'Content-Type': 'application/json',
-//                     'x-api-key': x_api_key
+//                     'Content-Type': 'application/x-www-form-urlencoded',
+//                     'Content-Length': postData.length
 //                 }
-//             });
-    
-//             if (response.data.result === 1 && response.data.data.Items) {
-//                 const leaderboardData = response.data.data.Items.map(item => ({
-//                     score: item.score,
-//                     userId: item.user_id,
-//                     gameTimes: item.game_times,
-//                     username: item.username
-//                 }));
-    
-//                 let leaderboardMessage = '🏆 Leaderboard 🏆\n\n';
-//                 leaderboardData.forEach((entry, index) => {
-//                     leaderboardMessage += `${index + 1}. User: ${entry.username}, Score: ${entry.score}\n`;
+//             };
+
+//             const req = https.request(options, (res) => {
+//                 let data = '';
+//                 res.on('data', (chunk) => {
+//                     data += chunk;
 //                 });
-    
-//                 // console.log("Leaderboard data: ", leaderboardData);
-//                 bot.sendMessage(chatId, leaderboardMessage);
-               
-//             } else {
-//                 console.log("No data found in leaderboard");
-//                 bot.sendMessage(chatId, "No data found in leaderboard.");
-//             }
+//                 res.on('end', async () => {
+//                     const result = JSON.parse(data);
+//                     if (result.ok) {
+//                         console.log('Invoice sent successfully:', JSON.stringify(result, null, 2));
+//                         await bot.answerCallbackQuery(callbackQuery.id, { text: "Invoice sent! Check your chat." });
+//                     } else {
+//                         console.error('Error response from Telegram API:', data);
+//                         await bot.answerCallbackQuery(callbackQuery.id, { text: "Error sending invoice. Please try again." });
+//                     }
+//                 });
+//             });
+
+//             req.on('error', async (error) => {
+//                 console.error('Error sending invoice:', error);
+//                 await bot.answerCallbackQuery(callbackQuery.id, { text: "Error sending invoice. Please try again." });
+//             });
+
+//             req.write(postData);
+//             req.end();
+
 //         } catch (error) {
-//             console.error("Error fetching leaderboard data: ", error.response ? error.response.data : error.message);
-//             bot.sendMessage(chatId, "Failed to fetch leaderboard data.");
-//         }
-//     }
-
-   
-// });
-
-// // Endpoint to receive score submissions
-// app.post('/submit-score', async (req, res) => {
-//     const { userId, username, score, wallet_address } = req.body;
-
-//     // console.log("Received data: ", req.body);
-
-//     // Update the leaderboard
-//     const existingUser = leaderboard.find(entry => entry.userId === userId);
-//     if (existingUser) {
-//         if (score > existingUser.score) {
-//             existingUser.score = score; // Update the score if the new score is higher
-//             // console.log(`Updated score for ${username} to ${score}`);
-//         } else {
-//             // console.log(`Score for ${username} is not updated as the new score ${score} is lower than the existing score ${existingUser.score}`);
+//             console.error('Error in callback query handler:', error);
+//             await bot.answerCallbackQuery(callbackQuery.id, { text: "An error occurred. Please try again." });
 //         }
 //     } else {
-//         leaderboard.push({ userId, username, score });
-//         // console.log(`Added new score for ${username}: ${score}`);
+//         try {
+//             await bot.answerCallbackQuery(callbackQuery.id, { text: "Unknown action" });
+//         } catch (error) {
+//             console.error('Error answering callback query:', error);
+//         }
 //     }
-
-//     // Forward score to the stored group chat ID
-//     if (groupChatId) {
-//         bot.sendMessage(groupChatId, `User ${username} achieved a score of ${score}.`);
-//     }
-
-//     // Redirect to another API with the provided headers and body
-//     try {
-//         const url = `${api_base_url}/upsertUser`;
-
-//         const response = await axios.post(url, {
-//             "userId": `${userId}`,
-//             "game_id": `${game_id}`, // You might need to dynamically set this
-//             "score": `${score}`,
-//             "username": `${username}`,
-//             "evmwallet": "evmwallet",
-//             "tonwallet": wallet_address
-//         }, {
-//             headers: {
-//                 'Content-Type': 'application/json',
-//                 'x-api-key': x_api_key // Replace with your actual API key
-//             }
-//         });
-
-//         // console.log("Successfully posted to external API: ", response.data);
-//     } catch (error) {
-//         console.error("Error posting to external API: ", error.response ? error.response.data : error.message);
-//     }
-
-//     res.json({ status: 'success' });
 // });
 
-// // Endpoint to get the highest score for a specific user
-// app.get('/highest-score', async (req, res) => {
-//     const userId = req.query.userId;
-//     // console.log("userId: ", userId);
+// app.post('/api/transaction', async (req, res) => {
+//     const { userId, itemId, itemName, itemPrice } = req.body;
 
-//     if (!userId) {
-//         return res.status(400).json({ status: 'error', message: 'User ID is required' });
+//     if (!userId || !itemId || !itemName || !itemPrice) {
+//         return res.status(400).json({ error: 'Missing required parameters' });
 //     }
 
-//     // Fetch the highest score from the external API
 //     try {
-//         const url = `${api_base_url}/me?userId=${userId}&game=${game_id}`;
+//         const prices = JSON.stringify([{ 
+//             label: itemName, 
+//             amount: Math.round(itemPrice * 100) // Convert to cents
+//         }]);
 
-//         const response = await axios.get(url, {
+//         const postData = new URLSearchParams({
+//             chat_id: userId,
+//             title: `Purchase ${itemName}`,
+//             description: `Buy ${itemName} for your game`,
+//             payload: `game_purchase_${itemId}`,
+//             provider_token: providerToken.trim(),
+//             start_parameter: 'game_purchase',
+//             currency: 'USD',
+//             prices: prices
+//         }).toString();
+
+//         const options = {
+//             hostname: 'api.telegram.org',
+//             port: 443,
+//             path: `/bot${token}/sendInvoice`,
+//             method: 'POST',
 //             headers: {
-//                 'x-api-key': x_api_key
+//                 'Content-Type': 'application/x-www-form-urlencoded',
+//                 'Content-Length': postData.length
 //             }
+//         };
+
+//         const request = https.request(options, (response) => {
+//             let data = '';
+//             response.on('data', (chunk) => {
+//                 data += chunk;
+//             });
+//             response.on('end', () => {
+//                 const result = JSON.parse(data);
+//                 if (result.ok) {
+//                     res.json({ success: true, message: 'Invoice sent successfully' });
+//                 } else {
+//                     res.status(500).json({ error: 'Failed to send invoice', details: result });
+//                 }
+//             });
 //         });
 
-//         const highestScore = response.data.data.score || 0;
-//         const lastupdate_time = response.data.data.lastupdate_time;
-//         // console.log(`Highest score for user ${userId} is ${highestScore}`);
-//         res.json({ status: 'success', score: highestScore,  lastupdate_time: lastupdate_time});
+//         request.on('error', (error) => {
+//             console.error('Error sending invoice:', error);
+//             res.status(500).json({ error: 'Internal server error' });
+//         });
+
+//         request.write(postData);
+//         request.end();
+
 //     } catch (error) {
-//         console.error("Error fetching highest score from external API: ", error.response ? error.response.data : error.message);
-//         // res.status(500).json({ status: 'error', message: 'Failed to fetch highest score from external API' });
-//         res.json({ status: 'success', score: 0,  lastupdate_time: 0});
+//         console.error('Error processing transaction:', error);
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// });
+
+// // Add this at the end of your file
+// bot.on('polling_error', (error) => {
+//     console.error('Polling error:', error);
+// });
+
+// process.on('uncaughtException', (error) => {
+//     console.error('Uncaught Exception:', error);
+// });
+
+// process.on('unhandledRejection', (reason, promise) => {
+//     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+// });
+
+// // Handle the pre-checkout query
+// bot.on('pre_checkout_query', (query) => {
+//     console.log("pre_checkout_query");
+//     bot.answerPreCheckoutQuery(query.id, true).catch(error => {
+//         console.error('Error answering pre-checkout query:', error);
+//     });
+// });
+
+// // Handle successful payment
+// bot.on('successful_payment', (msg) => {
+//     const chatId = msg.chat.id;
+//     const payload = msg.successful_payment.invoice_payload;
+//     const [type, itemId] = payload.split('_');
+    
+//     if (type === 'game' && itemId) {
+//         // Here you would typically update your game's database to reflect the purchase
+//         bot.sendMessage(chatId, `Congratulations! Your purchase of item ${itemId} was successful. The item has been added to your game inventory.`);
+//         // You might want to trigger an event or API call to your game server here
 //     }
 // });
 
@@ -359,8 +263,8 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-bot.on('polling_error', (error) => {
-    console.error(`Polling error: ${error.code} - ${error.response ? error.response.body.description : ''}`);
-});
+// bot.on('polling_error', (error) => {
+//     console.error(`Polling error: ${error.code} - ${error.response ? error.response.body.description : ''}`);
+// });
 
 console.log('Bot is running...');

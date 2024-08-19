@@ -18,15 +18,15 @@ export class MyRoom extends Room<MyRoomState> {
     this.setState(new MyRoomState());
 
     this.onMessage("*", (client, type, message) => {
-      
+
       switch (type) {
         case "update-data":
           // console.log("update-data message: ",message);
           this.updateData(message);
           break;
         case "get-leaderboard":
-          // console.log("get-leaderboard");
-          this.getLeaderboard();
+          console.log("get-leaderboard");
+          this.getLeaderboard(message);
           break;
         case "get-user-data":
           // console.log("get-user-data");
@@ -35,11 +35,11 @@ export class MyRoom extends Room<MyRoomState> {
         case "update-upgrade-data":
           // console.log("update-upgrade-data");
           this.updateUpgradeData(message);
-        break;
+          break;
         case "get-upgrade-data":
           // console.log("get-upgrade-data");
           this.getUpgradeData(message);
-        break;
+          break;
       }
     });
 
@@ -48,7 +48,7 @@ export class MyRoom extends Room<MyRoomState> {
 
   async submitScore() {
 
-    if(userData.tonwallet == ''){
+    if (userData.tonwallet == '') {
       this.disconnect();
       return;
     }
@@ -56,10 +56,10 @@ export class MyRoom extends Room<MyRoomState> {
     try {
       const url = `${api_base_url}/upsertUser`;
 
-      if(userData.score <= 0)
+      if (userData.score <= 0)
         userData.score = 1;
-      
-      // console.log("upsertUser userData: ", userData);
+
+      console.log("userData: ",userData);
 
       const response = await axios.post(url, {
         "userId": `${userData.userId}`,
@@ -68,26 +68,29 @@ export class MyRoom extends Room<MyRoomState> {
         "username": `${userData.username}`,
         "evmwallet": "evmwallet",
         "tonwallet": userData.tonwallet,
-        "extra": userData.extra
+        "extra": userData.extra,
+        "region": `${userData.region}`
+
       }, {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': x_api_key // Replace with your actual API key
         }
       });
+      // console.log("response: ",response.data);
       console.log("upsertUser success!!");
     } catch (error: any) {
-      console.error("Error fetching submitScore from external API: ", error.response ? error.response.data:"interal server error");
+      console.error("Error fetching submitScore from external API: ", error.response ? error.response.data : "interal server error");
     }
 
-    
+
     this.disconnect();
 
   }
 
   updateData(message: any) {
-    const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin, isFollowChannel, lastUpdateTime, lastPlayDate} = message;
-    
+    const { userId, username, score, wallet_address, money, totalMoney, earnClick, earnSec, energy, curEnergy, curSkin, isFollowChannel, lastUpdateTime, lastPlayDate, region } = message;
+
     const extra = {
       "money": money,
       "totalMoney": totalMoney,
@@ -101,13 +104,15 @@ export class MyRoom extends Room<MyRoomState> {
       "lastPlayDate": lastPlayDate
     }
 
+    // console.log("region: ", region);
     userData = {
       "userId": `${userId}`,
       "score": score,
       "username": `${username}`,
       "evmwallet": "evmwallet",
       "tonwallet": wallet_address,
-      "extra": JSON.stringify(extra)
+      "extra": JSON.stringify(extra),
+      "region": `${region}`
     };
   }
 
@@ -116,6 +121,7 @@ export class MyRoom extends Room<MyRoomState> {
     // console.log("getUserData message: ", message);
     const tonwallet = message.walletId;
     const curDate = message.curDate;
+    const region = message.region;
     // console.log("get-user-data curDate: ", curDate);
 
     try {
@@ -124,59 +130,62 @@ export class MyRoom extends Room<MyRoomState> {
           'x-api-key': x_api_key
         }
       });
-  
+
       // console.log("get-user-data response: ", response.data);
       let data = response.data.data;
 
       let extra = JSON.parse(data.extra);
-      if(extra.lastPlayDate != curDate){
+      if (extra.lastPlayDate != curDate) {
         extra.energy = 3000;
         extra.curEnergy = 3000;
         extra.lastPlayDate = curDate;
-        
+
         data.extra = JSON.stringify(extra)
         // console.log("get-user-data data.extra: ", data.extra);
       }
 
-      
-  
+
+
       userData = {
         "userId": `${data.userId}`,
         "score": 0,
         "username": `${data.username}`,
         "evmwallet": "evmwallet",
         "tonwallet": tonwallet,
-        "extra": data.extra
+        "extra": data.extra,
+        "region": `${data.region}`
       };
 
       console.log("success get-user-data : ", userData);
 
       this.broadcast('game-event', { event: 'get-user-data', result: 1, data: userData });
     } catch (error: any) {
-      const msg = error.response ? error.response.data:"interal server error";
+      const msg = error.response ? error.response.data : "interal server error";
       console.error("Error fetching get-user-data from external API: ", msg);
-      
-      this.broadcast('game-event', { 
-        event: 'get-user-data', 
+
+      this.broadcast('game-event', {
+        event: 'get-user-data',
         data: msg
       });
 
-      if(error.response.data.message == "User not found" && tonwallet != "")
+      if (error.response.data.message == "User not found" && tonwallet != "")
         this.createNewUser(message);
     }
   }
 
-  async createNewUser(message: any){
+  async createNewUser(message: any) {
     const userId = message.userId;
     const walletId = message.walletId;
+    const region = message.region;
     try {
+
       const url = `${api_base_url}/upsertUser`;
 
       const curData = new Date().toLocaleString('en', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-       });
+      });
 
       const extra = {
         "money": 0,
@@ -190,7 +199,7 @@ export class MyRoom extends Room<MyRoomState> {
         "lastUpdateTime": Date.now(),
         "lastPlayDate": curData
       }
-      
+
       const response = await axios.post(url, {
         "userId": `${userId}`,
         "game_id": `${game_id}`, // You might need to dynamically set this
@@ -198,7 +207,8 @@ export class MyRoom extends Room<MyRoomState> {
         "username": "new user",
         "evmwallet": "evmwallet",
         "tonwallet": `${walletId}`,
-        "extra": extra
+        "extra": extra,
+        "region": region
       }, {
         headers: {
           'Content-Type': 'application/json',
@@ -218,17 +228,17 @@ export class MyRoom extends Room<MyRoomState> {
 
       console.log("createNewUser success!!");
     } catch (error: any) {
-      console.error("Error fetching createNewUser from external API: ", error.response ? error.response.data:"interal server error");
+      console.error("Error fetching createNewUser from external API: ", error.response ? error.response.data : "interal server error");
     }
   }
 
-  async updateUpgradeData(message: any){
-    const {userId, extra} = message;
+  async updateUpgradeData(message: any) {
+    const { userId, extra } = message;
 
-    try{
+    try {
       const url = `${api_base_url}/task`;
       let extraData = extra;
-      if(extra == "")
+      if (extra == "")
         extraData = JSON.stringify(default_updJson);
 
       const response = await axios.post(url, {
@@ -244,19 +254,19 @@ export class MyRoom extends Room<MyRoomState> {
         }
       });
 
-      console.log("success updateUpgradeData response.data.data: ",response.data.data);
+      console.log("success updateUpgradeData response.data.data: ", response.data.data);
 
 
       // this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data });
-    }catch (error: any) {
-      console.error("Error fetching updateUpgradeData from external API: ", error.response ? error.response.data:"interal server error");
+    } catch (error: any) {
+      console.error("Error fetching updateUpgradeData from external API: ", error.response ? error.response.data : "interal server error");
     }
   }
 
-  async getUpgradeData(message: any){
-    const {userId} = message;
+  async getUpgradeData(message: any) {
+    const { userId } = message;
 
-    try{
+    try {
       const url = `${api_base_url}/tasklist?userId=${userId}&game=${game_id}`;
 
       const response = await axios.get(url, {
@@ -266,52 +276,55 @@ export class MyRoom extends Room<MyRoomState> {
         }
       });
 
-      console.log("success getUpgradeData response.data: ",response.data);
+      console.log("success getUpgradeData response.data: ", response.data);
 
       // console.log("getUpgradeData response.data.data.Items.length: ",response.data.data.Items.length);
-      if(response.data.data.Items.length == 0){
+      if (response.data.data.Items.length == 0) {
         const msg = {
           "userId": userId,
           "extra": ""
         }
         this.updateUpgradeData(msg);
-      }else
+      } else
         this.broadcast('game-event', { event: 'get-upgrade-data', result: 1, data: response.data.data.Items[0] });
-    }catch (error: any) {
-      console.error("Error fetching getUpgradeData from external API: ", error.response ? error.response.data:"interal server error");
+    } catch (error: any) {
+      console.error("Error fetching getUpgradeData from external API: ", error.response ? error.response.data : "interal server error");
     }
   }
 
-  async getLeaderboard(){
+  async getLeaderboard(message: any) {
+
+    const region = message.region;
 
     let url = `${api_base_url}/leaderboard`;
-    try{
+    try {
       let response = await axios.post(url, {
-          "game_id": `${game_id}`
+        "game_id": `${game_id}`,
+        "region": `${region}`
       }, {
-          headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': x_api_key
-          }
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': x_api_key
+        }
       });
 
       if (response.data.result === 1 && response.data.data.Items) {
-          const leaderboardData = response.data.data.Items.map((item: any) => ({
-              score: item.score,
-              userId: item.user_id,
-              gameTimes: item.game_times,
-              username: item.username
-          }));
+        const leaderboardData = response.data.data.Items.map((item: any) => ({
+          score: item.score,
+          userId: item.user_id,
+          gameTimes: item.game_times,
+          username: item.username
+        }));
 
-          this.broadcast('game-event', { event: 'get-leaderboard', result: 1, data: leaderboardData });
-          
+        this.broadcast('game-event', { event: 'get-leaderboard', result: 1, data: leaderboardData });
+
       } else {
-          console.log("No data found in leaderboard");
-          this.broadcast('game-event', { event: 'get-leaderboard', result: 1, data: [] });
+        console.log("No data found in leaderboard");
+        this.broadcast('game-event', { event: 'get-leaderboard', result: 1, data: [] });
       }
       console.log("updateLeaderboard success!!");
     } catch (error: any) {
-      console.error("Error fetching getLeaderboard from external API: ", error.response ? error.response.data:"interal server error");
+      console.error("Error fetching getLeaderboard from external API: ", error.response ? error.response.data : "interal server error");
     }
   }
 
@@ -321,7 +334,7 @@ export class MyRoom extends Room<MyRoomState> {
 
   onLeave(client: Client, consented: boolean) {
     console.log(client.sessionId, "left!");
-    if(userData)
+    if (userData)
       this.submitScore();
   }
 
